@@ -1,11 +1,11 @@
 services:
-  # Наш API сервис
+  # Наш API сервис (теперь спрятан внутри сети)
   api:
     build: .
     container_name: secure_api_app
-    ports:
-      - "8000:8000"
-    # Магия DevOps: даем контейнеру доступ к статистике твоего Mac
+    # Порты убрали из внешнего доступа, они доступны только для Nginx
+    expose:
+      - "8000"
     pid: "host"
     environment:
       - REDIS_HOST=redis_cache
@@ -16,5 +16,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis_cache
+    expose:
+      - "6379"
+
+  # Новые входные ворота — Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: secure_nginx_proxy
     ports:
-      - "6379:6379"
+      - "80:80" # Выставляем стандартный HTTP порт наружу
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api

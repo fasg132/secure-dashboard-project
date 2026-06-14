@@ -1,0 +1,52 @@
+name: CI Dashboard Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Скачиваем код репозитория
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Настраиваем окружение Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-state: '3.11'
+
+    # 3. Устанавливаем линтер для проверки кода Python
+    - name: Install Linting Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8
+
+    # 4. Проверяем код на ошибки и кривой синтаксис
+    - name: Run Python Lint (Flake8)
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings.
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # 5. Собираем Docker-образ нашего API для теста
+    - name: Build Docker Image
+      run: |
+        docker build -t secure-api:test .
+
+    # 6. Натравливаем Trivy на наш свежий образ
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'secure-api:test'
+        format: 'table'
+        exit-code: '1' # Уронить пайплайн, если найдутся критические уязвимости
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL'
