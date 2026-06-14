@@ -1,9 +1,8 @@
 services:
-  # Наш API сервис (теперь спрятан внутри сети)
+  # Наш API сервис
   api:
     build: .
     container_name: secure_api_app
-    # Порты убрали из внешнего доступа, они доступны только для Nginx
     expose:
       - "8000"
     pid: "host"
@@ -19,13 +18,33 @@ services:
     expose:
       - "6379"
 
-  # Новые входные ворота — Nginx Reverse Proxy
+  # Входные ворота — Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: secure_nginx_proxy
     ports:
-      - "80:80" # Выставляем стандартный HTTP порт наружу
+      - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
+
+  # Сборщик метрик — Prometheus
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus_monitor
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    expose:
+      - "9090"
+    depends_on:
+      - api
+
+  # Визуализатор графиков — Grafana
+  grafana:
+    image: grafana/grafana-oss:10.0.0
+    container_name: grafana_dashboard
+    ports:
+      - "3000:3000" # Открываем Grafana на порту 3000
+    depends_on:
+      - prometheus

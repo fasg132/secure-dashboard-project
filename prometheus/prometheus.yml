@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s # Как часто собирать метрики (каждые 5 секунд)
+
+scrape_configs:
+  - job_name: 'fastapi-app'
+    scrape_interval: 3s # Для нашего демо сделаем еще чаще, чтобы графики реагировали мгновенно
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api:8000'] # Имя сервиса из docker-compose

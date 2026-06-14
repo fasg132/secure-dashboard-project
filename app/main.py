@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 import psutil
 import time
 import redis
@@ -7,18 +8,19 @@ import os
 
 app = FastAPI(title="Secure Infrastructure API", version="1.0.0")
 
+# Настраиваем Prometheus Instrumentator
+# Он автоматически создаст эндпоинт /metrics и будет считать скорость ответов
+Instrumentator().instrument(app).expose(app)
+
 redis_host = os.getenv("REDIS_HOST", "localhost")
 r = redis.Redis(host=redis_host, port=6379, decode_responses=True)
 
 START_TIME = time.time()
-
 REQUEST_LIMIT = 5
 TIME_WINDOW = 60
 
-# Главная страница теперь отдает красивый HTML Дашборд
 @app.get("/", response_class=HTMLResponse)
 def read_root():
-    # Читаем наш файл index.html
     template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
