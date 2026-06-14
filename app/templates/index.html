@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure Security Dashboard</title>
+    <style>
+        body {
+            background-color: #0f141c;
+            color: #e1e4ea;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #58a6ff;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h3 {
+            margin: 0 0 10px 0;
+            color: #8b949e;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #34d399;
+        }
+        .error-message {
+            background-color: #f85149;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛡️ Infrastructure Monitor & Security Shield</h1>
+    <p>Real-time system metrics protected by Redis Rate Limiting.</p>
+
+    <div id="error-box" class="error-message"></div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>System Status</h3>
+            <div id="status" class="value">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>CPU Usage</h3>
+            <div id="cpu" class="value">0%</div>
+        </div>
+        <div class="card">
+            <h3>RAM Usage</h3>
+            <div id="ram" class="value">0%</div>
+        </div>
+        <div class="card">
+            <h3>Uptime</h3>
+            <div id="uptime" class="value">0s</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function updateMetrics() {
+        const errorBox = document.getElementById('error-box');
+        try {
+            const response = await fetch('/api/stats');
+            
+            if (response.status === 429) {
+                const data = await response.json();
+                errorBox.innerText = `🚨 SECURITY ALERT: ${data.detail}`;
+                errorBox.style.display = 'block';
+                document.getElementById('status').innerText = "BLOCKED";
+                document.getElementById('status').style.color = "#f85149";
+                return;
+            }
+
+            const data = await response.json();
+            errorBox.style.display = 'none';
+            
+            // Обновляем плашки данными
+            document.getElementById('status').innerText = data.status.toUpperCase();
+            document.getElementById('status').style.color = "#34d399";
+            document.getElementById('cpu').innerText = `${data.metrics.cpu_usage_percent}%`;
+            document.getElementById('ram').innerText = `${data.metrics.memory_usage_percent}%`;
+            document.getElementById('uptime').innerText = `${Math.round(data.uptime_seconds)}s`;
+
+        } catch (err) {
+            console.error("Failed to fetch metrics", err);
+        }
+    }
+
+    // Запускаем опрос каждые 3 секунды
+    setInterval(updateMetrics, 3000);
+    // Первый запуск сразу при загрузке страницы
+    updateMetrics();
+</script>
+</body>
+</html>

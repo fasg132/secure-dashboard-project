@@ -1,0 +1,20 @@
+services:
+  # Наш API сервис
+  api:
+    build: .
+    container_name: secure_api_app
+    ports:
+      - "8000:8000"
+    # Магия DevOps: даем контейнеру доступ к статистике твоего Mac
+    pid: "host"
+    environment:
+      - REDIS_HOST=redis_cache
+    depends_on:
+      - redis
+
+  # Сервис безопасности (База Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
